@@ -9,7 +9,8 @@ local defaults = {
 	b = 0,
 	a = 1,
 	s = 1,
-	sound = "off"
+	sound = "off",
+	move = 0,
 }
 local settings = {
 	x = "Bar X position",
@@ -19,7 +20,8 @@ local settings = {
 	b = "Border height",
 	a = "Alpha between 0 and 1",
 	s = "Bar scale",
-	sound = "Sound 'on' or 'off'"
+	sound = "Sound 'on' or 'off'",
+	move = "Unlock/lock bar position",
 }
 
 --------------------------------------------------------------------------------
@@ -82,7 +84,7 @@ local function UpdateSettings()
 end
 local function UpdateAppearance()
 	SP_OP_Frame:ClearAllPoints()
-	SP_OP_Frame:SetPoint("CENTER", "UIParent", "CENTER", SP_OP_GS["x"], SP_OP_GS["y"])
+	SP_OP_Frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", SP_OP_GS["x"], SP_OP_GS["y"])
 
 	local regions = {"SP_OP_Frame", "SP_OP_FrameShadowTime",
 		"SP_OP_FrameTime", "SP_OP_FrameText"}
@@ -130,8 +132,10 @@ local function SetBarText(msg)
 end
 local function UpdateDisplay()
 	if (op_timeLeft <= 0) then
-		SP_OP_FrameTime:Hide()
-		SP_OP_Frame:Hide()
+		if SP_OP_GS["move"] == 0 then
+			SP_OP_FrameTime:Hide()
+			SP_OP_Frame:Hide()
+		end
 	else
 		local w = (math.min(op_timeLeft, 4 - op_CDTime) / 4 ) * SP_OP_GS["w"]
 		local w2 = (op_timeLeft / 4) * SP_OP_GS["w"]
@@ -158,7 +162,7 @@ function SP_OP_OnLoad()
 	this:RegisterEvent("CHAT_MSG_SPELL_SELF_DAMAGE")
 	this:RegisterEvent("CHAT_MSG_COMBAT_CREATURE_VS_SELF_MISSES")  -- Event for enemy parries
 	this:RegisterEvent("CHAT_MSG_COMBAT_HOSTILEPLAYER_MISSES")      -- Event for player parries
-
+	this:RegisterForDrag("LeftButton")
 	-- Only for Execute dodges (server bug?)
 	this:RegisterEvent("CHAT_MSG_SPELL_DAMAGESHIELDS_ON_SELF")
 end
@@ -217,6 +221,9 @@ function SP_OP_OnUpdate(delta)
 		op_timeLeft = op_timeLeft - delta
 		if (op_timeLeft < 0) then
 			op_timeLeft = 0
+			if SP_OP_GS["move"] == 1 then
+				ResetTimer()
+			end
 		end
 	end
 	UpdateDisplay()
@@ -258,6 +265,20 @@ local function ChatHandler(msg)
 		for k, v in settings do
 			print(format("%s %s %s (%s)",
 				SLASH_SPOVERPOWER1, k, SP_OP_GS[k], v))
+		end
+	end
+	if cmd == "move" then
+		if SP_OP_GS["move"] == 1 then
+			SP_OP_Frame:SetMovable(true)
+			SP_OP_Frame:SetScript("OnDragStart", function()
+				SP_OP_Frame:StartMoving()
+			end)
+			SP_OP_Frame:SetScript("OnDragStop", function()
+				_, _, _, SP_OP_GS["x"], SP_OP_GS["y"] = SP_OP_Frame:GetPoint()
+				SP_OP_Frame:StopMovingOrSizing()
+			end)
+		else
+			SP_OP_Frame:SetMovable(false)
 		end
 	end
 	TestShow()

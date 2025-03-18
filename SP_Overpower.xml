@@ -12,6 +12,10 @@
 			<OnUpdate>
 				SP_OP_OnUpdate(arg1);
 			</OnUpdate>
+			<OnDragStart>
+			</OnDragStart>
+			<OnDragStop>
+			</OnDragStop>
 		</Scripts>
 
 		<Size>
